@@ -1,11 +1,15 @@
+# app/main.py
 from fastapi import FastAPI
-from app.routers.scraping import router as scraping_router
+from fastapi.responses import JSONResponse
 
-app = FastAPI(title="GamePrice Scraper")
+app = FastAPI()
 
-app.include_router(scraping_router)
-
-
-@app.get("/")
-def root():
-    return {"message": "API online"}
+@app.get("/scrape")
+def scrape():
+    # Sempre retorna Terraria, ignora qualquer query
+    data = {
+        "title": "Terraria",
+        "price": "R$ 32,99",
+        "url": "https://store.steampowered.com/app/105600/Terraria/"
+    }
+    return JSONResponse(content=data)
