@@ -4,8 +4,21 @@ from scraping_epic.scraping_epic import scrape_epic_game
 from scraping_nintendo.scraping_nintendo import scrape_nintendo_game
 from scraping_playstation.scraping_playstation import scrape_playstation_game
 from scraping_gog.scraping_gog import scrape_gog_game
-from scraping_steam.scraping_steam import scrape_steam_game
+from scraping_steam.scraping_games import buscar_jogo_exato
 from scraping_xbox.scraping_xbox import scrape_xbox_game
+from scraping_nuvem.scraping_nuvem import buscar_jogo_nuuvem
+from scraping_itch.scraping_itch import scrape_itch_game
+
+def scrape_steam_wrapper(nome_jogo):
+    res = buscar_jogo_exato(nome_jogo)
+    if not res: return None
+    return {
+        "nome": res.get("nome"),
+        "preco_atual": res.get("preco_atual"),
+        "preco_original": res.get("preco_original"),
+        "imagem": None,
+        "link": res.get("url")
+    }
 
 
 def executar_scraper(loja, funcao, nome_jogo):
@@ -40,17 +53,19 @@ def executar_scraper(loja, funcao, nome_jogo):
 
 def buscar_em_todas_lojas(nome_jogo):
     scrapers = {
-        "Steam": scrape_steam_game,
+        "Steam": scrape_steam_wrapper,
         "Epic": scrape_epic_game,
         "GOG": scrape_gog_game,
         "PlayStation": scrape_playstation_game,
         "Nintendo": scrape_nintendo_game,
-        "Xbox": scrape_xbox_game
+        "Xbox": scrape_xbox_game,
+        "Nuuvem": buscar_jogo_nuuvem,
+        "Itch.io": scrape_itch_game
     }
 
     resultados = {}
 
-    with ThreadPoolExecutor(max_workers=6) as executor:
+    with ThreadPoolExecutor(max_workers=8) as executor:
         futures = {
             executor.submit(executar_scraper, loja, funcao, nome_jogo): loja
             for loja, funcao in scrapers.items()
