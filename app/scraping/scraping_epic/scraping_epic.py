@@ -9,12 +9,8 @@ from selenium.webdriver.chrome.service import Service
 
 def iniciar_driver():
     options = webdriver.ChromeOptions()
-    options.add_argument("--headless=new")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--start-maximized")
     options.add_argument("--lang=pt-BR")
-    options.add_argument("--window-size=1600,3000")
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option("useAutomationExtension", False)
@@ -50,7 +46,7 @@ def extrair_precos(texto_card):
 
 def scrape_epic_game(nome_jogo):
     driver = iniciar_driver()
-    wait = WebDriverWait(driver, 20)
+    wait = WebDriverWait(driver, 5)
 
     try:
         busca = quote_plus(nome_jogo)
@@ -111,6 +107,7 @@ def scrape_epic_game(nome_jogo):
                     imagem = None
 
                 resultados.append({
+                    "plataforma": "Epic Games",
                     "nome": nome,
                     "preco_atual": preco_atual,
                     "preco_original": preco_original,
@@ -141,6 +138,7 @@ if __name__ == "__main__":
     resultado = scrape_epic_game(jogo)
 
     if resultado:
+        print("Plataforma:", resultado["plataforma"])
         print("Nome:", resultado["nome"])
         print("Preço atual:", resultado["preco_atual"])
         print("Preço sem promoção:", resultado["preco_original"])

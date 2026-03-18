@@ -18,7 +18,7 @@ session.headers.update({
 
 
 def _baixar_html(url: str) -> BeautifulSoup:
-    resp = session.get(url, timeout=20)
+    resp = session.get(url, timeout=5)
     resp.raise_for_status()
     return BeautifulSoup(resp.text, "html.parser")
 
@@ -82,6 +82,7 @@ def buscar_jogo_nuuvem(nome_jogo: str) -> dict | None:
     imagem = _extrair_imagem(soup_item)
     preco_cheio, preco_atual = _extrair_precos(soup_item)
     return {
+        "plataforma": "Nuuvem",
         "nome": nome,
         "url": url_item,
         "preco_atual": preco_atual,
@@ -96,6 +97,7 @@ if __name__ == "__main__":
     if not dados:
         print("Nenhum jogo encontrado na Nuuvem para esse nome.")
     else:
+        print("Plataforma:    ", dados["plataforma"])
         print("Nome:          ", dados["nome"])
         print("URL:           ", dados["url"])
         print("Preço atual:   ", f"R$ {dados['preco_atual']}" if dados["preco_atual"] else "N/A")

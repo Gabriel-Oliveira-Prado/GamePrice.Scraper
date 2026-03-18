@@ -77,6 +77,21 @@ def buscar_jogo_exato(termo, pais="br", idioma="brazilian"):
     return None
 
 
+def scrape_steam_game(nome_jogo):
+    resultado = buscar_jogo_exato(nome_jogo)
+    if not resultado:
+        return None
+
+    return {
+        "plataforma": "Steam",
+        "nome": resultado.get("nome"),
+        "preco_atual": resultado.get("preco_atual"),
+        "preco_original": resultado.get("preco_original"),
+        "imagem": None,
+        "link": resultado.get("url"),
+    }
+
+
 if __name__ == "__main__":
     termo = input("Nome do jogo: ")
     print(buscar_jogo_exato(termo))

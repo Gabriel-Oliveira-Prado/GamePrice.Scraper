@@ -86,13 +86,13 @@ def extrair_imagem_card(card):
 
 
 def buscar_melhor_resultado(driver, nome_jogo):
-    wait = WebDriverWait(driver, 20)
+    wait = WebDriverWait(driver, 5)
 
     url = f"https://store.playstation.com/pt-br/search/{quote_plus(nome_jogo)}"
     driver.get(url)
 
     wait.until(lambda d: d.execute_script("return document.readyState") == "complete")
-    time.sleep(5)
+    time.sleep(2)
 
     cards = driver.find_elements(By.CSS_SELECTOR, "a[href*='/concept/'], a[href*='/product/']")
     candidatos = []
@@ -113,7 +113,6 @@ def buscar_melhor_resultado(driver, nome_jogo):
 
             score = similaridade(nome_jogo, nome)
 
-            # bônus se contiver parte do nome buscado
             nome_busca = normalizar(nome_jogo)
             nome_card = normalizar(nome)
             if nome_busca in nome_card:
@@ -174,7 +173,6 @@ def extrair_preco_pagina(driver):
     preco_atual = tentar_texto(driver, seletores_atual)
     preco_original = tentar_texto(driver, seletores_original)
 
-    # fallback: pega todos os textos com R$
     if not preco_atual:
         try:
             elementos = driver.find_elements(By.XPATH, "//*[contains(text(),'R$')]")
@@ -237,7 +235,7 @@ def extrair_imagem_pagina(driver):
 
 def scrape_playstation_game(nome_jogo):
     driver = iniciar_driver()
-    wait = WebDriverWait(driver, 20)
+    wait = WebDriverWait(driver, 5)
 
     try:
         melhor = buscar_melhor_resultado(driver, nome_jogo)
@@ -246,13 +244,14 @@ def scrape_playstation_game(nome_jogo):
 
         driver.get(melhor["link"])
         wait.until(lambda d: d.execute_script("return document.readyState") == "complete")
-        time.sleep(5)
+        time.sleep(2)
 
         nome = extrair_nome_pagina(driver) or melhor["nome"]
         imagem = extrair_imagem_pagina(driver) or melhor["imagem"]
         preco_atual, preco_original = extrair_preco_pagina(driver)
 
         return {
+            "plataforma": "PlayStation",
             "nome": nome,
             "preco_atual": preco_atual,
             "preco_original": preco_original,
@@ -269,6 +268,7 @@ if __name__ == "__main__":
     resultado = scrape_playstation_game(jogo)
 
     if resultado:
+        print("Plataforma:", resultado["plataforma"])
         print("Nome:", resultado["nome"])
         print("Preço atual:", resultado["preco_atual"])
         print("Preço original:", resultado["preco_original"])

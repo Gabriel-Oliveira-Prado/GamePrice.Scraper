@@ -4,7 +4,6 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 import time
 
@@ -80,13 +79,13 @@ def extrair_imagem_card(card):
 
 
 def buscar_melhor_resultado(driver, nome_jogo):
-    wait = WebDriverWait(driver, 20)
+    wait = WebDriverWait(driver, 5)
 
     url = f"https://www.xbox.com/pt-BR/Search/Results?q={quote_plus(nome_jogo)}"
     driver.get(url)
 
     wait.until(lambda d: d.execute_script("return document.readyState") == "complete")
-    time.sleep(5)
+    time.sleep(2)
 
     links = driver.find_elements(By.CSS_SELECTOR, "a[href*='/games/store/'], a[href*='/pt-br/games/store/']")
     candidatos = []
@@ -156,7 +155,6 @@ def extrair_nome_pagina(driver):
         "[class*='ProductDetailsHeader'] h1",
         "[class*='product'] h1"
     ]
-
     return tentar_texto(driver, seletores)
 
 
@@ -284,13 +282,14 @@ def scrape_xbox_game(nome_jogo):
 
         driver.get(melhor["link"])
         wait.until(lambda d: d.execute_script("return document.readyState") == "complete")
-        time.sleep(5)
+        time.sleep(2)
 
         nome = extrair_nome_pagina(driver) or melhor["nome"]
         imagem = extrair_imagem_pagina(driver) or melhor["imagem"]
         preco_atual, preco_original = extrair_precos_pagina(driver)
 
         return {
+            "plataforma": "Xbox",
             "nome": nome,
             "preco_atual": preco_atual,
             "preco_original": preco_original,
@@ -307,6 +306,7 @@ if __name__ == "__main__":
     resultado = scrape_xbox_game(jogo)
 
     if resultado:
+        print("Plataforma:", resultado["plataforma"])
         print("Nome:", resultado["nome"])
         print("Preço atual:", resultado["preco_atual"])
         print("Preço original:", resultado["preco_original"])

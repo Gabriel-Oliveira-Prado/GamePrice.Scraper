@@ -23,7 +23,7 @@ def iniciar_driver():
 
 
 def pegar_primeiro_link_jogo(driver, nome_jogo):
-    wait = WebDriverWait(driver, 20)
+    wait = WebDriverWait(driver, 5)
 
     busca = quote_plus(nome_jogo)
     url = f"https://www.gog.com/en/games?query={busca}"
@@ -92,7 +92,7 @@ def extrair_imagem(driver, nome=None):
 
 
 def extrair_dados_jogo(driver, url_jogo):
-    wait = WebDriverWait(driver, 20)
+    wait = WebDriverWait(driver, 5)
     driver.get(url_jogo)
 
     wait.until(lambda d: d.execute_script("return document.readyState") == "complete")
@@ -103,7 +103,6 @@ def extrair_dados_jogo(driver, url_jogo):
     preco_original = None
     imagem = None
 
-    # Nome
     try:
         nome = wait.until(
             EC.presence_of_element_located((By.TAG_NAME, "h1"))
@@ -111,10 +110,8 @@ def extrair_dados_jogo(driver, url_jogo):
     except:
         nome = None
 
-    # Imagem
     imagem = extrair_imagem(driver, nome)
 
-    # Preço atual
     try:
         preco_atual = wait.until(
             EC.presence_of_element_located(
@@ -124,7 +121,6 @@ def extrair_dados_jogo(driver, url_jogo):
     except:
         preco_atual = None
 
-    # Preço original
     try:
         preco_original = driver.find_element(
             By.CSS_SELECTOR,
@@ -133,16 +129,15 @@ def extrair_dados_jogo(driver, url_jogo):
     except:
         preco_original = None
 
-    # Caso não tenha promoção, usa o preço atual como preço original também
     if preco_atual and not preco_original:
         preco_original = preco_atual
 
-    # Caso seja grátis
     if preco_atual:
         if preco_atual.upper() == "FREE":
             preco_original = "FREE"
 
     return {
+        "plataforma": "GOG",
         "nome": nome,
         "preco_atual": preco_atual,
         "preco_original": preco_original,
@@ -172,6 +167,7 @@ if __name__ == "__main__":
     resultado = scrape_gog_game(jogo)
 
     if resultado:
+        print("Plataforma:", resultado["plataforma"])
         print("Nome:", resultado["nome"])
         print("Preço atual:", resultado["preco_atual"])
         print("Preço original:", resultado["preco_original"])

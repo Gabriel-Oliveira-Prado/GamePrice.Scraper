@@ -78,13 +78,13 @@ def extrair_imagem_card(card):
 
 
 def buscar_melhor_resultado(driver, nome_jogo):
-    wait = WebDriverWait(driver, 20)
+    wait = WebDriverWait(driver, 5)
 
     url = f"https://www.nintendo.com/pt-br/search/?q={quote_plus(nome_jogo)}"
     driver.get(url)
 
     wait.until(lambda d: d.execute_script("return document.readyState") == "complete")
-    time.sleep(5)
+    time.sleep(2)
 
     links = driver.find_elements(By.CSS_SELECTOR, "a[href*='/store/products/']")
     candidatos = []
@@ -206,7 +206,6 @@ def extrair_precos_pagina(driver):
         "span[class*='original']"
     ]
 
-    # preço atual
     for seletor in seletores_atual:
         try:
             elementos = driver.find_elements(By.CSS_SELECTOR, seletor)
@@ -225,7 +224,6 @@ def extrair_precos_pagina(driver):
         except:
             pass
 
-    # preço original
     for seletor in seletores_original:
         try:
             elementos = driver.find_elements(By.CSS_SELECTOR, seletor)
@@ -244,7 +242,6 @@ def extrair_precos_pagina(driver):
         except:
             pass
 
-    # fallback
     if not preco_atual:
         try:
             elementos = driver.find_elements(By.XPATH, "//*[contains(text(),'R$') or contains(text(),'$') or contains(text(),'Grátis') or contains(text(),'FREE')]")
@@ -273,7 +270,7 @@ def extrair_precos_pagina(driver):
 
 def scrape_nintendo_game(nome_jogo):
     driver = iniciar_driver()
-    wait = WebDriverWait(driver, 20)
+    wait = WebDriverWait(driver, 5)
 
     try:
         melhor = buscar_melhor_resultado(driver, nome_jogo)
@@ -282,13 +279,14 @@ def scrape_nintendo_game(nome_jogo):
 
         driver.get(melhor["link"])
         wait.until(lambda d: d.execute_script("return document.readyState") == "complete")
-        time.sleep(5)
+        time.sleep(2)
 
         nome = extrair_nome_pagina(driver) or melhor["nome"]
         imagem = extrair_imagem_pagina(driver) or melhor["imagem"]
         preco_atual, preco_original = extrair_precos_pagina(driver)
 
         return {
+            "plataforma": "Nintendo",
             "nome": nome,
             "preco_atual": preco_atual,
             "preco_original": preco_original,
@@ -305,6 +303,7 @@ if __name__ == "__main__":
     resultado = scrape_nintendo_game(jogo)
 
     if resultado:
+        print("Plataforma:", resultado["plataforma"])
         print("Nome:", resultado["nome"])
         print("Preço atual:", resultado["preco_atual"])
         print("Preço original:", resultado["preco_original"])

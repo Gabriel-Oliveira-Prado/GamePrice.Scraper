@@ -1,98 +1,160 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
-
+from scraping_xbox.scraping_xbox import scrape_xbox_game
 from scraping_epic.scraping_epic import scrape_epic_game
 from scraping_nintendo.scraping_nintendo import scrape_nintendo_game
 from scraping_playstation.scraping_playstation import scrape_playstation_game
 from scraping_gog.scraping_gog import scrape_gog_game
-from scraping_steam.scraping_games import buscar_jogo_exato
-from scraping_xbox.scraping_xbox import scrape_xbox_game
 from scraping_nuvem.scraping_nuvem import buscar_jogo_nuuvem
-from scraping_itch.scraping_itch import scrape_itch_game
+from scraping_steam.scraping_games import buscar_jogo_exato
+from scraping_steam.scraping_img import pegar_imagem_jogo
 
-def scrape_steam_wrapper(nome_jogo):
-    res = buscar_jogo_exato(nome_jogo)
-    if not res: return None
+
+def normalizar(texto):
+    if not texto:
+        return ""
+    return " ".join(texto.lower().strip().split())
+
+
+def nome_exato(nome_buscado, nome_resultado):
+    return normalizar(nome_buscado) == normalizar(nome_resultado)
+
+
+def padronizar_resultado(resultado, plataforma):
+    if not resultado:
+        return None
+
     return {
-        "nome": res.get("nome"),
-        "preco_atual": res.get("preco_atual"),
-        "preco_original": res.get("preco_original"),
-        "imagem": None,
-        "link": res.get("url")
+        "plataforma": plataforma,
+        "nome": resultado.get("nome"),
+        "preco_atual": resultado.get("preco_atual"),
+        "preco_original": resultado.get("preco_original", resultado.get("preco_cheio")),
+        "imagem": resultado.get("imagem"),
+        "link": resultado.get("link", resultado.get("url"))
     }
 
 
-def executar_scraper(loja, funcao, nome_jogo):
-    try:
-        resultado = funcao(nome_jogo)
+def processar_xbox(nome_jogo):
+    resultado = scrape_xbox_game(nome_jogo)
+    resultado = padronizar_resultado(resultado, "Xbox")
 
-        if not resultado:
-            return loja, {
-                "nome": None,
-                "preco_atual": None,
-                "preco_original": None,
-                "imagem": None,
-                "link": None,
-                "erro": "Nenhum resultado encontrado"
-            }
+    if not resultado or not nome_exato(nome_jogo, resultado["nome"]):
+        return None
 
-        if "erro" not in resultado:
-            resultado["erro"] = None
-
-        return loja, resultado
-
-    except Exception as e:
-        return loja, {
-            "nome": None,
-            "preco_atual": None,
-            "preco_original": None,
-            "imagem": None,
-            "link": None,
-            "erro": str(e)
-        }
+    return resultado
 
 
-def buscar_em_todas_lojas(nome_jogo):
-    scrapers = {
-        "Steam": scrape_steam_wrapper,
-        "Epic": scrape_epic_game,
-        "GOG": scrape_gog_game,
-        "PlayStation": scrape_playstation_game,
-        "Nintendo": scrape_nintendo_game,
-        "Xbox": scrape_xbox_game,
-        "Nuuvem": buscar_jogo_nuuvem,
-        "Itch.io": scrape_itch_game
+def processar_epic(nome_jogo):
+    resultado = scrape_epic_game(nome_jogo)
+    resultado = padronizar_resultado(resultado, "Epic Games")
+
+    if not resultado or not nome_exato(nome_jogo, resultado["nome"]):
+        return None
+
+    return resultado
+
+
+def processar_nintendo(nome_jogo):
+    resultado = scrape_nintendo_game(nome_jogo)
+    resultado = padronizar_resultado(resultado, "Nintendo")
+
+    if not resultado or not nome_exato(nome_jogo, resultado["nome"]):
+        return None
+
+    return resultado
+
+
+def processar_playstation(nome_jogo):
+    resultado = scrape_playstation_game(nome_jogo)
+    resultado = padronizar_resultado(resultado, "PlayStation")
+
+    if not resultado or not nome_exato(nome_jogo, resultado["nome"]):
+        return None
+
+    return resultado
+
+
+def processar_gog(nome_jogo):
+    resultado = scrape_gog_game(nome_jogo)
+    resultado = padronizar_resultado(resultado, "GOG")
+
+    if not resultado or not nome_exato(nome_jogo, resultado["nome"]):
+        return None
+
+    return resultado
+
+
+def processar_nuuvem(nome_jogo):
+    resultado = buscar_jogo_nuuvem(nome_jogo)
+    resultado = padronizar_resultado(resultado, "Nuuvem")
+
+    if not resultado or not nome_exato(nome_jogo, resultado["nome"]):
+        return None
+
+    return resultado
+
+
+def processar_steam(nome_jogo):
+    dados = buscar_jogo_exato(nome_jogo)
+    if not dados:
+        return None
+
+    imagem = pegar_imagem_jogo(nome_jogo)
+
+    resultado = {
+        "plataforma": "Steam",
+        "nome": dados.get("nome"),
+        "preco_atual": dados.get("preco_atual"),
+        "preco_original": dados.get("preco_original"),
+        "imagem": imagem,
+        "link": dados.get("url")
     }
 
-    resultados = {}
+    if not nome_exato(nome_jogo, resultado["nome"]):
+        return None
 
-    with ThreadPoolExecutor(max_workers=8) as executor:
-        futures = {
-            executor.submit(executar_scraper, loja, funcao, nome_jogo): loja
-            for loja, funcao in scrapers.items()
-        }
-
-        for future in as_completed(futures):
-            loja, resultado = future.result()
-            resultados[loja] = resultado
-
-    return resultados
+    return resultado
 
 
-def mostrar_resultados(resultados):
-    print("\n========= RESULTADO =========\n")
+def mostrar_resultado(resultado):
+    print("\n==============================")
+    print("Plataforma:", resultado.get("plataforma"))
+    print("Nome:", resultado.get("nome"))
+    print("Preço atual:", resultado.get("preco_atual"))
+    print("Preço original:", resultado.get("preco_original"))
+    print("Imagem:", resultado.get("imagem"))
+    print("Link:", resultado.get("link"))
 
-    for loja, dados in resultados.items():
-        print(f"===== {loja} =====")
-        print("Nome:", dados.get("nome"))
-        print("Preço atual:", dados.get("preco_atual"))
-        print("Preço original:", dados.get("preco_original"))
-        print("Imagem:", dados.get("imagem"))
-        print("Link:", dados.get("link"))
-        print("Erro:", dados.get("erro"))
-        print()
+
+def main():
+    nome_jogo = input("Digite o nome do jogo: ").strip()
+
+    funcoes = [
+        processar_xbox,
+        processar_epic,
+        processar_nintendo,
+        processar_playstation,
+        processar_gog,
+        processar_nuuvem,
+        processar_steam
+    ]
+
+    resultados = []
+
+    for func in funcoes:
+        try:
+            resultado = func(nome_jogo)
+            if resultado:
+                resultados.append(resultado)
+        except Exception as e:
+            print(f"Erro em {func.__name__}: {e}")
+
+    if not resultados:
+        print("\nNenhum jogo encontrado com nome exato em nenhuma plataforma.")
+        return
+
+    print("\nRESULTADOS ENCONTRADOS:")
+    for resultado in resultados:
+        mostrar_resultado(resultado)
 
 
 if __name__ == "__main__":
-    jogo = input("Digite o nome do jogo: ").strip()
-    resultados = buscar_em_todas_lojas(jogo)
-    mostrar_resultados(resultados)
+    main()
