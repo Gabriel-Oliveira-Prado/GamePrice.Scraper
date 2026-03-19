@@ -114,18 +114,8 @@ def processar_steam(nome_jogo):
     return resultado
 
 
-def mostrar_resultado(resultado):
-    print("\n==============================")
-    print("Plataforma:", resultado.get("plataforma"))
-    print("Nome:", resultado.get("nome"))
-    print("Preço atual:", resultado.get("preco_atual"))
-    print("Preço original:", resultado.get("preco_original"))
-    print("Imagem:", resultado.get("imagem"))
-    print("Link:", resultado.get("link"))
-
-
-def main():
-    nome_jogo = input("Digite o nome do jogo: ").strip()
+def buscar_em_todas_lojas(nome_jogo: str) -> list:
+    import concurrent.futures
 
     funcoes = [
         processar_xbox,
@@ -139,13 +129,35 @@ def main():
 
     resultados = []
 
-    for func in funcoes:
-        try:
-            resultado = func(nome_jogo)
-            if resultado:
-                resultados.append(resultado)
-        except Exception as e:
-            print(f"Erro em {func.__name__}: {e}")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(funcoes)) as executor:
+        # Mapeia cada função para ser executada em uma thread
+        future_to_func = {executor.submit(func, nome_jogo): func for func in funcoes}
+        
+        for future in concurrent.futures.as_completed(future_to_func):
+            func = future_to_func[future]
+            try:
+                resultado = future.result()
+                if resultado:
+                    resultados.append(resultado)
+            except Exception as e:
+                print(f"Erro em {func.__name__}: {e}")
+
+    return resultados
+
+def mostrar_resultado(resultado):
+    print("\n==============================")
+    print("Plataforma:", resultado.get("plataforma"))
+    print("Nome:", resultado.get("nome"))
+    print("Preço atual:", resultado.get("preco_atual"))
+    print("Preço original:", resultado.get("preco_original"))
+    print("Imagem:", resultado.get("imagem"))
+    print("Link:", resultado.get("link"))
+
+
+def main():
+    nome_jogo = input("Digite o nome do jogo: ").strip()
+
+    resultados = buscar_em_todas_lojas(nome_jogo)
 
     if not resultados:
         print("\nNenhum jogo encontrado com nome exato em nenhuma plataforma.")
